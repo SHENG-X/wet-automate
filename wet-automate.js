@@ -9,18 +9,22 @@ if (!!!wetVersion) {
   throw new Error("wet-version property required in package.json");
 }
 
+console.info(`Inject GCWET ${wetVersion} into the current project`);
+
 const WET_DIST_URL = `https://github.com/wet-boew/GCWeb/releases/download/v${wetVersion}/themes-dist-${wetVersion}-gcweb.zip`;
 
+let execScript = './unix.sh';
+
 if (os.type() === 'Windows_NT') {
-// handle window os logic
+  execScript = 'win.bat';
 }
 
 // handle unix/linux os logic
-exec(`./unix.sh ${WET_DIST_URL} themes-dist-${wetVersion}-gcweb`, (error, stdout, stderr) => {
+exec(`${execScript} ${WET_DIST_URL} themes-dist-${wetVersion}-gcweb`, (error, stdout, stderr) => {
   if (error) {
     throw new Error(`exec error: ${error}`);
   }
-})
+});
 
 // read angular.json
 const angularJson = require("./angular.json")
@@ -30,8 +34,8 @@ const buildAssets = angularJson.projects[projName].architect.build.options.asset
 let insWetBoew = true;
 let insGCWeb = true;
 
-for(let asset of buildAssets) {
-  if (typeof(asset) === 'object') {
+for (let asset of buildAssets) {
+  if (typeof (asset) === 'object') {
     if (asset?.input === './node_modules/gcwet/wet-boew/') {
       insWetBoew = false;
       continue;
@@ -59,11 +63,15 @@ if (insGCWeb) {
   });
 }
 
-// console.log(buildAssets)
+if (insWetBoew || insGCWeb) {
+  console.info("Inject GCWET web theme into angular.json");
 
-fs.writeFile("./angular.json", JSON.stringify(angularJson), function(err) {
-  if (err) {
-    throw new Error("unable to update angular.json to include gcwet assets")
-  }
-});
+  fs.writeFile("./angular.json", JSON.stringify(angularJson), function (err) {
+    if (err) {
+      throw new Error("unable to update angular.json to include gcwet assets")
+    }
+  });
+}
+
+
 
